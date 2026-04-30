@@ -3,145 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IA Goat Counter - Live</title>
+    <title>Contador Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/ml5@0.12.2/dist/ml5.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; background: #1a1a1a; color: white; }
-        #canvas-container { display: flex; justify-content: center; margin-top: 10px; }
-        canvas { border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 95%; height: auto !important; }
-        .ui-panel { padding: 20px; background: #2d2d2d; border-radius: 0 0 20px 20px; }
-        .counter-badge { font-size: 2rem; background: #27ae60; padding: 10px 20px; border-radius: 50px; display: inline-block; margin: 10px 0; }
-        button { background: #e67e22; color: white; border: none; padding: 15px 30px; font-size: 1rem; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        button:active { transform: scale(0.95); }
-        #history { text-align: left; padding: 20px; max-width: 500px; margin: auto; }
-        .log-item { border-bottom: 1px solid #444; padding: 10px 0; font-size: 0.9rem; }
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; margin: 0; }
+        .stats { background: #333; padding: 15px; }
+        #counter { font-size: 3rem; color: #27ae60; font-weight: bold; }
+        canvas { width: 100% !important; height: auto !important; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="ui-panel">
-        <h2>🐐 IA Contador de Corral</h2>
-        <div id="status">Cargando Cerebro Artificial...</div>
-        <div class="counter-badge" id="count-num">0</div>
-        <br>
-        <button onclick="saveToHistory()">📸 REGISTRAR CONTEO</button>
+    <div class="stats">
+        <div id="status">⏳ Cargando...</div>
+        <div id="counter">0</div>
+        <button onclick="saveCount()" style="padding:10px; background:orange; border:none; border-radius:5px;">GUARDAR</button>
     </div>
-
     <div id="canvas-container"></div>
-
-    <div id="history">
-        <h3>📊 Historial del día</h3>
-        <div id="log-list"></div>
-    </div>
+    <ul id="log" style="text-align:left;"></ul>
 
     <script>
         let video;
         let detector;
         let detections = [];
-        let goatCount = 0;
 
         function setup() {
             const canvas = createCanvas(640, 480);
             canvas.parent('canvas-container');
-        
-            const constraints = {
-                video: {
-                    facingMode: "environment"
-                }
-            };
             
-            video = createCapture(constraints, function(stream) {
-                console.log("Cámara lista");
-                // Cargamos el detector SOLO cuando la cámara ya está enviando señal
+            // Forzamos cámara trasera
+            video = createCapture({
+                video: { facingMode: "environment" }
+            }, function() {
+                console.log("Cámara activa");
+                // Cargamos el modelo
                 detector = ml5.objectDetector('cocossd', {}, modelReady);
             });
-            
             video.size(640, 480);
             video.hide();
         }
 
-function modelReady() {
-    document.getElementById('status').innerText = "✅ Cámara e IA Listas";
-    console.log("Modelo cargado correctamente");
-    detect();
-}
-
         function modelReady() {
-            document.getElementById('status').innerText = "✅ Cámara e IA Listas";
-            detect();
+            document.getElementById('status').innerText = "✅ FUNCIONANDO";
+            detectObjects();
         }
 
-        function detect() {
-            // El modelo busca en el video continuamente
+        function detectObjects() {
             detector.detect(video, (err, results) => {
-                if (err) return;
-                detections = results;
-                detect(); // Recursión para detección constante
+                if (!err) {
+                    detections = results;
+                }
+                detectObjects(); // Bucle infinito de detección
             });
         }
 
         function draw() {
-            // Dibujar el feed de la cámara
             image(video, 0, 0, width, height);
-
-            let tempCount = 0;
-
+            
+            let count = 0;
+            
             for (let i = 0; i < detections.length; i++) {
                 let obj = detections[i];
                 
-                // Filtramos por animales que se parecen a cabras (ovejas, vacas, perros)
-                if (obj.label === 'goat') {
-                    tempCount++;
-
-                   // Esto dibujará el cuadro para que SEPAS qué está viendo la IA
-                    stroke(0, 255, 0); 
+                // IMPORTANTE: COCO-SSD reconoce cabras como 'sheep', 'cow' o 'dog'
+                // Vamos a aceptar casi cualquier animal para probar
+                if (obj.label === 'sheep' || obj.label === 'cow' || obj.label === 'dog' || obj.label === 'horse' || obj.label === 'person') {
+                    count++;
+                    
+                    // Dibujar cuadro brillante
+                    stroke(0, 255, 0);
                     strokeWeight(4);
                     noFill();
                     rect(obj.x, obj.y, obj.width, obj.height);
                     
-                    fill(0, 255, 0);
+                    // Dibujar nombre de lo que cree que ve
                     noStroke();
-                    text("Cabras: " + obj.label, obj.x, obj.y - 10);
+                    fill(0, 255, 0);
+                    textSize(24);
+                    text(obj.label, obj.x, obj.y - 10);
                 }
             }
-            goatCount = tempCount;
-            document.getElementById('count-num').innerText = goatCount;
+            
+            document.getElementById('counter').innerText = count;
         }
 
-        function saveToHistory() {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString();
-            const dateStr = now.toLocaleDateString();
-            
-            const logList = document.getElementById('log-list');
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.innerHTML = `<strong>${dateStr} ${timeStr}</strong> - Conteo: ${goatCount} animales`;
-            
-            logList.prepend(item);
-
-            // Guardar localmente en el navegador (Base de datos interna)
-            const registro = { fecha: dateStr, hora: timeStr, total: goatCount };
-            let historialLocal = JSON.parse(localStorage.getItem('conteoCabras') || "[]");
-            historialLocal.push(registro);
-            localStorage.setItem('conteoCabras', JSON.stringify(historialLocal));
-
-            alert("Conteo guardado en la base de datos local");
+        function saveCount() {
+            const c = document.getElementById('counter').innerText;
+            const li = document.createElement('li');
+            li.innerText = new Date().toLocaleTimeString() + " - Conteo: " + c;
+            document.getElementById('log').prepend(li);
         }
-
-        // Cargar datos previos al iniciar
-        window.onload = () => {
-            let historialLocal = JSON.parse(localStorage.getItem('conteoCabras') || "[]");
-            const logList = document.getElementById('log-list');
-            historialLocal.reverse().forEach(reg => {
-                const item = document.createElement('div');
-                item.className = 'log-item';
-                item.innerHTML = `<strong>${reg.fecha} ${reg.hora}</strong> - Conteo: ${reg.total} animales`;
-                logList.appendChild(item);
-            });
-        };
     </script>
 </body>
 </html>
