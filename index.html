@@ -6,6 +6,7 @@
     <title>IA Goat Counter - Live</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ml5@0.12.2/dist/ml5.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; background: #1a1a1a; color: white; }
         #canvas-container { display: flex; justify-content: center; margin-top: 10px; }
@@ -42,23 +43,30 @@
         let goatCount = 0;
 
         function setup() {
-            // Crear canvas que se ajusta a la pantalla
             const canvas = createCanvas(640, 480);
             canvas.parent('canvas-container');
-
-            // Configurar cámara trasera en celulares
+        
             const constraints = {
                 video: {
-                    facingMode: "environment" // Fuerza la cámara de atrás
+                    facingMode: "environment"
                 }
             };
-            video = createCapture(constraints);
+            
+            video = createCapture(constraints, function(stream) {
+                console.log("Cámara lista");
+                // Cargamos el detector SOLO cuando la cámara ya está enviando señal
+                detector = ml5.objectDetector('cocossd', {}, modelReady);
+            });
+            
             video.size(640, 480);
             video.hide();
-
-            // Cargar modelo COCO-SSD
-            detector = ml5.objectDetector('cocossd', modelReady);
         }
+
+function modelReady() {
+    document.getElementById('status').innerText = "✅ Cámara e IA Listas";
+    console.log("Modelo cargado correctamente");
+    detect();
+}
 
         function modelReady() {
             document.getElementById('status').innerText = "✅ Cámara e IA Listas";
