@@ -27,71 +27,97 @@
         let video;
         let detector;
         let detections = [];
-
+        let historialConteos = []; // Para estabilizar el número
+        
         function setup() {
             const canvas = createCanvas(640, 480);
             canvas.parent('canvas-container');
             
-            // Forzamos cámara trasera
             video = createCapture({
                 video: { facingMode: "environment" }
             }, function() {
-                console.log("Cámara activa");
-                // Cargamos el modelo
-                detector = ml5.objectDetector('cocossd', {}, modelReady);
+                // Ajustamos la confianza a 0.45 para evitar "fantasmas"
+                detector = ml5.objectDetector('cocossd', { confidence: 0.45 }, modelReady);
             });
             video.size(640, 480);
             video.hide();
         }
-
+        
         function modelReady() {
-            document.getElementById('status').innerText = "✅ FUNCIONANDO";
+            document.getElementById('status').innerText = "✅ CONTANDO CABRAS...";
             detectObjects();
         }
-
+        
         function detectObjects() {
             detector.detect(video, (err, results) => {
                 if (!err) {
                     detections = results;
                 }
-                detectObjects(); // Bucle infinito de detección
+                detectObjects();
             });
         }
-
+        
         function draw() {
             image(video, 0, 0, width, height);
             
-            let count = 0;
+            let conteoInstantaneo = 0;
             
             for (let i = 0; i < detections.length; i++) {
                 let obj = detections[i];
                 
-                // IMPORTANTE: COCO-SSD reconoce cabras como 'sheep', 'cow' o 'dog'
-                // Vamos a aceptar casi cualquier animal para probar
-                if (obj.label === 'sheep') {
-                    count++;
+                // Filtro estricto: Solo etiquetas que la IA usa para cabras/ganado
+                if (obj.label === 'sheep' || obj.label === 'cow') {
+                    conteoInstantaneo++;
                     
-                    // Dibujar cuadro brillante
-                    stroke(0, 255, 0);
-                    strokeWeight(4);
+                    // Dibujar visualización
+                    stroke(40, 255, 100);
+                    strokeWeight(3);
                     noFill();
-                    rect(obj.x, obj.y, obj.width, obj.height);
+                    rect(obj.x, obj.y, obj.width, obj.height, 8);
                     
-                    // Dibujar nombre de lo que cree que ve
+                    fill(40, 255, 100);
                     noStroke();
-                    fill(0, 255, 0);
-                    textSize(24);
-                    text(obj.label, obj.x, obj.y - 10);
+                    textSize(20);
+                    text("CABRA", obj.x, obj.y - 10);
                 }
             }
             
-            document.getElementById('counter').innerText = count;
+            // --- LÓGICA DE ESTABILIZACIÓN ---
+            historialConteos.push(conteoInstantaneo);
+            if (historialConteos.length > 20) { // Guardamos los últimos 20 cuadros
+                historialConteos.shift();
+            }
+            
+            // Calculamos la MODA (el número que más se repite en el historial)
+            // Esto evita que el contador salte si una cabra desaparece un milisegundo
+            let conteoEstable = calcularModa(historialConteos);
+            
+            document.getElementById('counter').innerText = conteoEstable;
         }
-
+        
+        // Función auxiliar para estabilizar el número
+        function calcularModa(arr) {
+            if(arr.length == 0) return 0;
+            let modo = {};
+            let maxEl = arr[0], maxCount = 1;
+            for(let i = 0; i < arr.length; i++) {
+                let el = arr[i];
+                if(modo[el] == null) modo[el] = 1;
+                else modo[el]++;
+                if(modo[el] > maxCount) {
+                    maxEl = el;
+                    maxCount = modo[el];
+                }
+            }
+            return maxEl;
+        }
+        
         function saveCount() {
-            const c = document.getElementById('counter').innerText;
+            const num = document.getElementById('counter').innerText;
+            const tiempo = new Date().toLocaleString();
             const li = document.createElement('li');
-            li.innerText = new Date().toLocaleTimeString() + " - Conteo: " + c;
+            li.style.color = "#27ae60";
+            li.innerHTML = `<strong>${num} Cabras</strong> - ${tiempo}`;
             document.getElementById('log').prepend(li);
         }
     </script>
