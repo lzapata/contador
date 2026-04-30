@@ -95,17 +95,15 @@ function modelReady() {
                 if (obj.label === 'goat') {
                     tempCount++;
 
-                    // Dibujar cuadro
-                    stroke(39, 174, 96);
+                   // Esto dibujará el cuadro para que SEPAS qué está viendo la IA
+                    stroke(0, 255, 0); 
                     strokeWeight(4);
                     noFill();
-                    rect(obj.x, obj.y, obj.width, obj.height, 5);
+                    rect(obj.x, obj.y, obj.width, obj.height);
                     
-                    // Dibujar etiqueta
-                    fill(39, 174, 96);
+                    fill(0, 255, 0);
                     noStroke();
-                    textSize(18);
-                    text("Animal detectado", obj.x, obj.y - 10);
+                    text("Cabras: " + obj.label, obj.x, obj.y - 10);
                 }
             }
             goatCount = tempCount;
