@@ -2,157 +2,116 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Goat Conut AI - Final Try</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goat Detector Pro</title>
     <style>
-        :root { --bg: #0f1a0f; --card: #1d2e1d; --green: #4ade80; --text: #e2f5e2; --border: #2a3f2a; }
-        body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        /* Pantalla de Inicio */
-        #setup { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 20px; }
-        input, select, button { padding: 14px; border-radius: 10px; border: 1.5px solid var(--border); width: 320px; font-family: 'Space Mono', monospace; font-size: 0.9rem; }
-        button { background: var(--green); color: #0f1a0f; font-weight: 800; cursor: pointer; border: none; }
-
-        /* Contenedor de Cámara */
-        #cam-container { position: relative; width: 100%; height: 50vh; background: #000; }
-        video, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Contador Flotante */
-        #counter-ui { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.7); padding: 10px 20px; border: 2px solid var(--green); border-radius: 12px; text-align: center; }
-        .big-num { font-size: 2.5rem; font-family: 'Space Mono'; color: var(--green); font-weight: bold; display: block; }
-
-        /* Historial */
-        #history-section { flex: 1; background: var(--bg); padding: 15px; overflow-y: auto; border-top: 1px solid var(--border); }
-        .log-entry { background: var(--card); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; border: 1px solid var(--border); font-family: 'Space Mono'; font-size: 0.8rem; }
-        .btn-save { width: 100%; margin-bottom: 10px; background: #2a3f2a; color: var(--green); border: 1px solid var(--green); }
+        body { font-family: sans-serif; background: #0f1a0f; color: #e2f5e2; margin: 0; text-align: center; }
+        #setup { padding: 50px 20px; }
+        input, select, button { padding: 12px; margin: 10px; border-radius: 8px; width: 80%; max-width: 300px; border: 1px solid #2a3f2a; }
+        button { background: #4ade80; color: #000; font-weight: bold; border: none; cursor: pointer; }
+        #display { display: none; position: relative; }
+        video, canvas { width: 100%; max-height: 70vh; background: #000; }
+        #overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
+        #log-container { padding: 20px; text-align: left; max-height: 200px; overflow-y: auto; background: #162116; }
+        .entry { border-bottom: 1px solid #2a3f2a; padding: 5px; font-size: 0.8rem; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
 <div id="setup">
-    <div style="font-size: 4rem;">🐐</div>
-    <h1>Goat Conut AI</h1>
-    <input type="password" id="api-key" placeholder="rf_tu_api_key">
-    <select id="model-id">
-        <option value="brookside-research/goat-looker/1">Goat Looker ⭐</option>
-        <option value="justin-burger/goats-hqnax/1">Goats HQ</option>
+    <h2>🐐 Goat Detector AI</h2>
+    <input type="password" id="key" placeholder="rf_tu_api_key">
+    <select id="model">
+        <option value="brookside-research/goat-looker/1">Modelo: Goat Looker</option>
+        <option value="justin-burger/goats-hqnax/1">Modelo: Goats HQ</option>
     </select>
-    <button onclick="startApp()">🚀 ACTIVAR CÁMARA</button>
+    <button onclick="init()">INICIAR</button>
 </div>
 
-<div id="cam-container">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="overlay"></canvas>
-    <div id="counter-ui">
-        <span class="big-num" id="current-count">0</span>
-        <small style="color: var(--green)">GOATS</small>
+<div id="display">
+    <div style="padding: 10px; background: #162116;">
+        <span id="counter" style="font-size: 2rem; color: #4ade80; font-weight: bold;">0</span> CABRAS
+        <button onclick="save()" style="width: auto; padding: 5px 15px; margin-left: 20px;">💾 GUARDAR</button>
     </div>
-</div>
-
-<div id="history-section">
-    <button class="btn-save" onclick="saveToLog()">💾 GUARDAR REGISTRO ACTUAL</button>
-    <div id="log-list"></div>
+    <video id="v" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div id="log-container"><strong>HISTORIAL:</strong><div id="logs"></div></div>
 </div>
 
 <script>
-let video, canvas, ctx, apiKey, model;
-let lastPredictions = [];
+let video, canvas, ctx, apiKey, modelId;
+let currentDetections = [];
 
-async function startApp() {
-    apiKey = document.getElementById('api-key').value.trim();
-    model = document.getElementById('model-id').value;
-    
-    if(!apiKey.startsWith('rf_')) return alert("La clave debe empezar con rf_");
+async function init() {
+    apiKey = document.getElementById('key').value.trim();
+    modelId = document.getElementById('model').value;
+    if(!apiKey.startsWith('rf_')) return alert("API Key no válida");
+
     document.getElementById('setup').style.display = 'none';
+    document.getElementById('display').style.display = 'block';
 
-    video = document.getElementById('video');
+    video = document.getElementById('v');
     canvas = document.getElementById('overlay');
     ctx = canvas.getContext('2d');
 
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-    });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     video.srcObject = stream;
-    
     video.onloadedmetadata = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        // Inferencia cada 800ms para no saturar la conexión
-        setInterval(runInference, 800);
+        setInterval(predict, 1000); // Una foto por segundo
     };
 }
 
-async function runInference() {
-    if (!video.videoWidth) return;
+async function predict() {
+    const tmp = document.createElement('canvas');
+    tmp.width = video.videoWidth; tmp.height = video.videoHeight;
+    tmp.getContext('2d').drawImage(video, 0, 0);
+    const b64 = tmp.toDataURL("image/jpeg", 0.5).split(',')[1];
 
-    // Capturar frame
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = video.videoWidth;
-    tempCanvas.height = video.videoHeight;
-    tempCanvas.getContext('2d').drawImage(video, 0, 0);
-    
-    // Calidad 0.5 para asegurar que la petición pase por el ancho de banda
-    const base64 = tempCanvas.toDataURL("image/jpeg", 0.5).split(',')[1];
-
-    // URL de detección estándar
-    const url = `https://detect.roboflow.com/${model}?api_key=${apiKey}`;
+    // Usamos el método de paso de parámetros por URL para evitar bloqueos CORS complejos
+    const url = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}&name=goat.jpg`;
 
     try {
-        const response = await fetch(url, {
+        const res = await fetch(url, {
             method: "POST",
-            body: base64,
+            body: b64,
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
         });
-        
-        const data = await response.json();
-        if (data.predictions) {
-            lastPredictions = data.predictions;
-            drawBoxes(data.predictions);
+        const data = await res.json();
+        if(data.predictions) {
+            currentDetections = data.predictions;
+            render();
         }
-    } catch (err) {
-        console.error("Error en detección:", err);
-    }
+    } catch(e) { console.error(e); }
 }
 
-function drawBoxes(predictions) {
+function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById('current-count').innerText = predictions.length;
+    document.getElementById('counter').innerText = currentDetections.length;
 
-    predictions.forEach(p => {
-        const x = p.x - p.width / 2;
-        const y = p.y - p.height / 2;
+    currentDetections.forEach(p => {
+        const x = p.x - p.width/2;
+        const y = p.y - p.height/2;
+        const conf = Math.round(p.confidence * 100);
 
         ctx.strokeStyle = "#4ade80";
         ctx.lineWidth = 4;
         ctx.strokeRect(x, y, p.width, p.height);
-
-        // Etiqueta solicitada: Goat + Porcentaje
-        const score = Math.round(p.confidence * 100);
+        
         ctx.fillStyle = "#4ade80";
-        ctx.font = "bold 18px 'Space Mono'";
-        ctx.fillText(`GOAT ${score}%`, x, y > 20 ? y - 10 : y + 20);
+        ctx.font = "bold 20px Arial";
+        ctx.fillText(`GOAT ${conf}%`, x, y - 10);
     });
 }
 
-function saveToLog() {
-    const count = lastPredictions.length;
-    if (count === 0) return alert("No hay detecciones para guardar.");
-
-    // Sacamos el promedio de efectividad de las cabras detectadas
-    const avgConf = Math.round((lastPredictions.reduce((a, b) => a + b.confidence, 0) / count) * 100);
-    const time = new Date().toLocaleTimeString();
-
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.innerHTML = `
-        <span><b>GOAT</b> (x${count})</span>
-        <span>Efectividad: ${avgConf}%</span>
-        <span style="color: #6b8f6b">${time}</span>
-    `;
-    
-    const list = document.getElementById('log-list');
-    list.prepend(entry);
+function save() {
+    if(currentDetections.length === 0) return;
+    const avg = Math.round(currentDetections.reduce((a,b) => a+b.confidence, 0) / currentDetections.length * 100);
+    const div = document.createElement('div');
+    div.className = 'entry';
+    div.innerHTML = `<span>🐐 GOAT (x${currentDetections.length})</span> <span>Efectividad: ${avg}%</span> <span>${new Date().toLocaleTimeString()}</span>`;
+    document.getElementById('logs').prepend(div);
 }
 </script>
 </body>
