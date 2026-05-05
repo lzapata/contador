@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Goat Conut AI</title>
+
+    <!-- inferencejs: corre el modelo YOLOv8 directo en el browser con WebGL -->
+    <script src="https://cdn.roboflow.com/0.2.26/roboflow.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,29 +25,32 @@
         body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; display: flex; flex-direction: column; }
 
         /* ── SETUP ── */
-        #setup-screen {
+        #setup {
             position: fixed; inset: 0; z-index: 200;
             background: var(--bg); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 18px; padding: 28px;
+            align-items: center; justify-content: center; gap: 16px; padding: 28px;
         }
-        #setup-screen h1 { font-size: 2rem; font-weight: 800; }
-        #setup-screen p  { color: var(--muted); font-size: .85rem; text-align: center; max-width: 320px; line-height: 1.6; }
+        #setup h1 { font-size: 2rem; font-weight: 800; }
+        #setup p  { color: var(--muted); font-size: .85rem; text-align: center; max-width: 320px; line-height: 1.6; }
         .field { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 5px; }
         .field label { font-family: 'Space Mono', monospace; font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
         .field input, .field select {
             width: 100%; background: var(--card); border: 1.5px solid var(--border);
             border-radius: 10px; color: var(--text); font-family: 'Space Mono', monospace;
-            font-size: .85rem; padding: 12px 14px; outline: none;
+            font-size: .85rem; padding: 12px 14px; outline: none; transition: border-color .2s;
         }
         .field input:focus, .field select:focus { border-color: var(--green); }
         .field select option { background: var(--card); }
         #btn-start {
             width: 100%; max-width: 380px; background: var(--green); color: #0f1a0f;
             font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem;
-            border: none; border-radius: 12px; padding: 14px; cursor: pointer;
+            border: none; border-radius: 12px; padding: 14px; cursor: pointer; transition: opacity .2s;
         }
+        #btn-start:disabled { opacity: .5; cursor: not-allowed; }
         .note { font-family: 'Space Mono', monospace; font-size: .6rem; color: var(--muted); text-align: center; max-width: 340px; line-height: 1.7; }
         .note a { color: var(--green); }
+        #setup-steps { font-family: 'Space Mono', monospace; font-size: .62rem; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; width: 100%; max-width: 380px; line-height: 2; }
+        #setup-steps b { color: var(--green); }
 
         /* ── HEADER ── */
         header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
@@ -70,7 +77,7 @@
         #badge-count .l { font-size: .46rem; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-family: 'Space Mono', monospace; }
         .badge { background: rgba(0,0,0,.6); backdrop-filter: blur(4px); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-family: 'Space Mono', monospace; font-size: .54rem; color: var(--muted); }
         #badge-fps { position: absolute; top: 10px; right: 10px; }
-        #badge-dbg { position: absolute; bottom: 8px; left: 8px; max-width: 62%; word-break: break-all; }
+        #badge-dbg { position: absolute; bottom: 8px; left: 8px; max-width: 65%; }
         #badge-mdl { position: absolute; bottom: 8px; right: 8px; }
 
         /* ── CONTROLES ── */
@@ -98,11 +105,18 @@
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setup-screen">
+<!-- ══ SETUP ══ -->
+<div id="setup">
     <div style="font-size:3.5rem">🐐</div>
     <h1>Goat Conut AI</h1>
-    <p>Ingresa tu API key de Roboflow para activar la detección de cabras con YOLOv8.</p>
+    <p>El modelo corre <strong>100% en tu dispositivo</strong> con WebGL — sin enviar imágenes a ningún servidor.</p>
+
+    <div id="setup-steps">
+        <b>Pasos para obtener tu API key gratis:</b><br>
+        1. Ve a <a href="https://roboflow.com" target="_blank" style="color:var(--green)">roboflow.com</a> → Sign up<br>
+        2. Settings → API Keys → copia tu key<br>
+        3. La key empieza con <b>rf_</b>
+    </div>
 
     <div class="field">
         <label>Roboflow API Key</label>
@@ -110,29 +124,26 @@
     </div>
 
     <div class="field">
-        <label>Modelo</label>
+        <label>Modelo (todos entrenados con cabras)</label>
         <select id="inp-model">
-            <option value="brookside-research/goat-looker/1">⭐ Goat Looker — 3,970 imágenes</option>
-            <option value="justin-burger/goats-hqnax/1">Goats — 690 imágenes</option>
-            <option value="great-ouleb/goat-ai/1">Goat AI — 145 imágenes</option>
+            <option value="goat-looker/1">⭐ Goat Looker — 3,970 imgs (Brookside Research)</option>
+            <option value="goats-hqnax/1">Goats — 690 imgs (Justin Burger)</option>
+            <option value="goat-ai/1">Goat AI — 145 imgs (Great)</option>
         </select>
     </div>
 
     <button id="btn-start" onclick="startApp()">🚀 INICIAR DETECTOR</button>
 
-    <p class="note">
-        API key gratis en <a href="https://roboflow.com" target="_blank">roboflow.com</a>
-        → Sign up → Settings → API Keys
-    </p>
+    <p class="note">El modelo se descarga una vez (~30 MB) y luego corre offline.<br>Sin internet no podrá descargarse por primera vez.</p>
 </div>
 
-<!-- APP -->
+<!-- ══ APP ══ -->
 <header>
     <div class="logo">
         <div class="logo-icon">🐐</div>
         <div>
             <div class="logo-text">Goat Conut AI</div>
-            <div class="logo-sub">Roboflow · YOLOv8</div>
+            <div class="logo-sub">inferencejs · WebGL · On-device</div>
         </div>
     </div>
     <div id="pill" class="loading">⏳ INICIANDO</div>
@@ -147,7 +158,7 @@
             <span class="l">cabras</span>
         </div>
         <div id="badge-fps" class="badge">-- fps</div>
-        <div id="badge-dbg" class="badge">esperando cámara…</div>
+        <div id="badge-dbg" class="badge">iniciando…</div>
         <div id="badge-mdl" class="badge">--</div>
     </div>
 
@@ -157,8 +168,8 @@
             <input type="range" id="sl-conf" min="0.10" max="0.90" step="0.05" value="0.35">
         </div>
         <div class="cg">
-            <span class="cl">Suavizado: <span class="cv" id="v-smooth">10</span> frames</span>
-            <input type="range" id="sl-smooth" min="1" max="30" step="1" value="10">
+            <span class="cl">Suavizado: <span class="cv" id="v-smooth">8</span> frames</span>
+            <input type="range" id="sl-smooth" min="1" max="30" step="1" value="8">
         </div>
         <button id="btn-save" onclick="saveCount()">💾 GUARDAR</button>
     </div>
@@ -169,184 +180,193 @@
         <div id="log-empty">Presiona GUARDAR para registrar un conteo</div>
     </div>
 </main>
-
 <div id="toast"></div>
 
 <script>
-/* ══════════════════════════════════
+/* ════════════════════════════════
    STATE
-══════════════════════════════════ */
-let API_KEY  = '';
-let MODEL_ID = '';
-let CONF     = 0.35;
-let SMOOTH   = 10;
+════════════════════════════════ */
+let API_KEY   = '';
+let MODEL_ID  = '';
+let CONF      = 0.35;
+let SMOOTH    = 8;
 
 let vid, cvs, ctx;
+let rfModel   = null;
 let countHistory = [];
 let prevCount    = 0;
-let inferring    = false;
-let lastErrTs    = 0;
 let fpsSmooth    = 0;
 let lastFpsTs    = performance.now();
 
-/* ══════════════════════════════════
+/* ════════════════════════════════
    SETUP
-══════════════════════════════════ */
+════════════════════════════════ */
 function startApp() {
     const key = document.getElementById('inp-key').value.trim();
     if (!key || !key.startsWith('rf_')) {
-        toast('La API key debe empezar con "rf_"', true);
-        return;
+        toast('La API key debe empezar con "rf_"', true); return;
     }
     API_KEY  = key;
     MODEL_ID = document.getElementById('inp-model').value;
-    document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('badge-mdl').textContent = MODEL_ID.split('/')[1];
-    initCamera();
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('badge-mdl').textContent = MODEL_ID.split('/')[0];
+    init();
 }
 document.getElementById('inp-key')
     .addEventListener('keydown', e => { if (e.key === 'Enter') startApp(); });
 
-/* ══════════════════════════════════
-   CAMERA
-══════════════════════════════════ */
-async function initCamera() {
+/* ════════════════════════════════
+   INIT: cámara + modelo en paralelo
+════════════════════════════════ */
+async function init() {
     vid = document.getElementById('vid');
     cvs = document.getElementById('cvs');
     ctx = cvs.getContext('2d');
-    setPill('loading', '⏳ CÁMARA');
 
+    setPill('loading', '⏳ CARGANDO');
+    dbg('iniciando cámara y modelo…');
+
+    // Lanzar cámara y modelo en paralelo
+    const [_, model] = await Promise.all([
+        startCamera(),
+        loadModel()
+    ]);
+
+    rfModel = model;
+    dbg('listo · detectando…');
+    setPill('ok', '🐐 DETECTANDO');
+
+    // Iniciar loops
+    requestAnimationFrame(detectLoop);
+    requestAnimationFrame(fpsLoop);
+}
+
+/* ════════════════════════════════
+   CÁMARA
+════════════════════════════════ */
+async function startCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' },
-                     width:  { ideal: 640 },
-                     height: { ideal: 480 } }
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 } }
         });
         vid.srcObject = stream;
 
-        // Esperar metadata + play (necesario en iOS Safari)
-        await new Promise((res, rej) => {
+        await new Promise((res) => {
             vid.onloadedmetadata = () => vid.play().then(res).catch(res);
-            setTimeout(res, 5000); // timeout de seguridad
+            setTimeout(res, 5000);
         });
 
-        // Esperar a que videoWidth sea real (puede tardar en iOS)
-        let attempts = 0;
-        while ((!vid.videoWidth || !vid.videoHeight) && attempts < 20) {
-            await sleep(150);
-            attempts++;
-        }
-
-        if (!vid.videoWidth) throw new Error('No se obtuvo resolución del video');
+        // Esperar videoWidth real (iOS Safari puede tardar)
+        for (let i = 0; i < 30 && !vid.videoWidth; i++) await sleep(100);
 
         syncCanvas();
         window.addEventListener('resize', syncCanvas);
-
-        setPill('ok', '🐐 DETECTANDO');
         dbg(`cámara OK · ${vid.videoWidth}×${vid.videoHeight}`);
 
-        // Iniciar loop de inferencia
-        inferLoop();
-        // Iniciar loop de FPS (rAF)
-        requestAnimationFrame(fpsLoop);
-
     } catch (e) {
-        setPill('error', '❌ SIN CÁMARA');
         toast('Cámara: ' + e.message, true);
+        setPill('error', '❌ CÁMARA');
+        throw e;
     }
 }
 
 function syncCanvas() {
-    // El canvas interno coincide con la resolución del video
     cvs.width  = vid.videoWidth  || 640;
     cvs.height = vid.videoHeight || 480;
-
-    // El canvas visual se posiciona y dimensiona exactamente sobre el video
-    const vr = vid.getBoundingClientRect();
-    const wr = vid.parentElement.getBoundingClientRect();
-    cvs.style.width  = vr.width  + 'px';
-    cvs.style.height = vr.height + 'px';
-    cvs.style.left   = (vr.left - wr.left) + 'px';
-    cvs.style.top    = (vr.top  - wr.top)  + 'px';
+    requestAnimationFrame(() => {
+        const vr = vid.getBoundingClientRect();
+        const wr = vid.parentElement.getBoundingClientRect();
+        cvs.style.width  = vr.width  + 'px';
+        cvs.style.height = vr.height + 'px';
+        cvs.style.left   = (vr.left - wr.left) + 'px';
+        cvs.style.top    = (vr.top  - wr.top)  + 'px';
+    });
 }
 
-/* ══════════════════════════════════
-   INFERENCE LOOP
-   - No usa rAF (para no saturar móvil)
-   - Espera a que termine cada llamada
-     antes de lanzar la siguiente
-══════════════════════════════════ */
-async function inferLoop() {
-    while (true) {
-        await runInference();
-        await sleep(350); // pausa entre inferencias
+/* ════════════════════════════════
+   CARGAR MODELO con inferencejs
+   Corre 100% en el browser (WebGL)
+   Sin enviar imágenes a ningún servidor
+════════════════════════════════ */
+function loadModel() {
+    dbg('descargando modelo…');
+    return new Promise((resolve, reject) => {
+        roboflow.auth({ publishable_key: API_KEY })
+            .load({
+                model: MODEL_ID.split('/')[0],
+                version: parseInt(MODEL_ID.split('/')[1]),
+                onProgress: (p) => {
+                    dbg(`descargando modelo… ${Math.round(p * 100)}%`);
+                }
+            })
+            .then(model => {
+                model.configure({
+                    threshold: CONF,
+                    overlap: 0.30,
+                    max_objects: 100
+                });
+                resolve(model);
+            })
+            .catch(err => {
+                toast('Error al cargar modelo: ' + err.message, true);
+                setPill('error', '❌ MODELO');
+                reject(err);
+            });
+    });
+}
+
+/* ════════════════════════════════
+   DETECTION LOOP (rAF)
+   inferencejs detecta directo
+   sobre el elemento <video>
+════════════════════════════════ */
+let detecting = false;
+
+async function detectLoop(ts) {
+    if (!rfModel || !vid.videoWidth || vid.readyState < 2) {
+        requestAnimationFrame(detectLoop);
+        return;
     }
-}
 
-async function runInference() {
-    if (inferring) return;
-    if (!vid.videoWidth || vid.readyState < 2) return;
+    if (!detecting) {
+        detecting = true;
 
-    inferring = true;
-    try {
-        // Captura frame actual como JPEG base64
-        const tmp = document.createElement('canvas');
-        tmp.width  = vid.videoWidth;
-        tmp.height = vid.videoHeight;
-        tmp.getContext('2d').drawImage(vid, 0, 0);
-        const b64 = tmp.toDataURL('image/jpeg', 0.82).split(',')[1];
+        // Actualizar umbral de confianza si cambió
+        rfModel.configure({ threshold: CONF });
 
-        const url = `https://serverless.roboflow.com/${MODEL_ID}`
-                  + `?api_key=${API_KEY}`
-                  + `&confidence=${Math.round(CONF * 100)}`
-                  + `&overlap=30`;
-
-        const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: b64
-        });
-
-        if (!resp.ok) {
-            const body = await resp.json().catch(() => ({}));
-            const msg  = body.message || body.error || `HTTP ${resp.status}`;
-            throttleErr(`❌ API ${resp.status}: ${msg}`);
-            setPill('error', '❌ ' + resp.status);
-            inferring = false;
-            return;
+        try {
+            // inferencejs detecta directo sobre el <video> — sin canvas temporal
+            const preds = await rfModel.detect(vid);
+            render(preds);
+        } catch (e) {
+            dbg('err: ' + e.message);
         }
 
-        const data  = await resp.json();
-        const preds = data.predictions || [];
-
-        dbg(`API OK · ${preds.length} det · ${data.image?.width}×${data.image?.height}`);
-        if (document.getElementById('pill').classList.contains('error')) {
-            setPill('ok', '🐐 DETECTANDO');
-        }
-
-        render(preds);
-
-    } catch (e) {
-        throttleErr('Red: ' + e.message);
+        detecting = false;
     }
-    inferring = false;
+
+    requestAnimationFrame(detectLoop);
 }
 
-/* ══════════════════════════════════
+/* ════════════════════════════════
    RENDER
-══════════════════════════════════ */
+════════════════════════════════ */
 function render(preds) {
     ctx.clearRect(0, 0, cvs.width, cvs.height);
 
+    // inferencejs devuelve: { x, y, width, height, class, confidence }
+    // donde x, y son coordenadas del CENTRO en píxeles de la imagen del video
+
+    let count = 0;
     for (const p of preds) {
-        // Roboflow: x,y = centro del box, en píxeles de la imagen enviada
-        const x = p.x - p.width  / 2;
-        const y = p.y - p.height / 2;
-        const w = p.width;
-        const h = p.height;
+        count++;
+        const x = p.bbox.x - p.bbox.width  / 2;
+        const y = p.bbox.y - p.bbox.height / 2;
+        const w = p.bbox.width;
+        const h = p.bbox.height;
         const pct = Math.round(p.confidence * 100);
 
-        // Bounding box
+        // Box
         ctx.strokeStyle = '#4ade80';
         ctx.lineWidth   = 3;
         ctx.beginPath();
@@ -359,7 +379,7 @@ function render(preds) {
         // Etiqueta
         const lbl = `🐐 ${pct}%`;
         ctx.font = 'bold 14px monospace';
-        const tw  = ctx.measureText(lbl).width + 16;
+        const tw = ctx.measureText(lbl).width + 16;
         ctx.fillStyle = 'rgba(74,222,128,0.88)';
         ctx.beginPath();
         ctx.roundRect(x, y - 26, tw, 24, 4);
@@ -374,8 +394,10 @@ function render(preds) {
         ctx.fillRect(x, y + h - 5, w * p.confidence, 5);
     }
 
-    // Actualizar conteo estabilizado
-    countHistory.push(preds.length);
+    dbg(`detectando · ${count} cabras · WebGL`);
+
+    // Estabilización con mediana
+    countHistory.push(count);
     if (countHistory.length > SMOOTH) countHistory.shift();
     const stable = mediana(countHistory);
 
@@ -389,8 +411,7 @@ function render(preds) {
 }
 
 function drawCorners(x, y, w, h, color, cs) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth   = 2.5;
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5;
     [[x,y,x+cs,y],[x,y,x,y+cs],
      [x+w,y,x+w-cs,y],[x+w,y,x+w,y+cs],
      [x,y+h,x+cs,y+h],[x,y+h,x,y+h-cs],
@@ -400,7 +421,9 @@ function drawCorners(x, y, w, h, color, cs) {
     });
 }
 
-/* ── FPS loop (rAF independiente) ── */
+/* ════════════════════════════════
+   FPS LOOP
+════════════════════════════════ */
 function fpsLoop(ts) {
     const dt = ts - lastFpsTs;
     lastFpsTs = ts;
@@ -409,12 +432,13 @@ function fpsLoop(ts) {
     requestAnimationFrame(fpsLoop);
 }
 
-/* ══════════════════════════════════
+/* ════════════════════════════════
    CONTROLES
-══════════════════════════════════ */
+════════════════════════════════ */
 document.getElementById('sl-conf').addEventListener('input', function() {
     CONF = parseFloat(this.value);
     document.getElementById('v-conf').textContent = CONF.toFixed(2);
+    if (rfModel) rfModel.configure({ threshold: CONF });
 });
 document.getElementById('sl-smooth').addEventListener('input', function() {
     SMOOTH = parseInt(this.value);
@@ -422,21 +446,20 @@ document.getElementById('sl-smooth').addEventListener('input', function() {
     if (countHistory.length > SMOOTH) countHistory = countHistory.slice(-SMOOTH);
 });
 
-/* ══════════════════════════════════
+/* ════════════════════════════════
    GUARDAR
-══════════════════════════════════ */
+════════════════════════════════ */
 function saveCount() {
     const num  = document.getElementById('counter').textContent;
     const t    = new Date();
     const time = t.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const date = t.toLocaleDateString('es-MX');
-
     document.getElementById('log-empty')?.remove();
     const li = document.createElement('li');
     li.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px">
             <span class="ln">${num}</span>
-            <span style="font-size:.75rem">cabras · ${MODEL_ID.split('/')[1]}</span>
+            <span style="font-size:.75rem">cabras · ${MODEL_ID.split('/')[0]}</span>
         </div>
         <span class="lt">${date} · ${time}</span>`;
     document.getElementById('log').prepend(li);
@@ -446,37 +469,24 @@ function saveCount() {
     setTimeout(() => btn.textContent = '💾 GUARDAR', 1500);
 }
 
-/* ══════════════════════════════════
+/* ════════════════════════════════
    HELPERS
-══════════════════════════════════ */
-function setPill(cls, txt) {
-    const p = document.getElementById('pill');
-    p.className = cls; p.textContent = txt;
-}
-
-let _toastT;
-function toast(msg, err = false) {
+════════════════════════════════ */
+function setPill(cls, txt) { const p = document.getElementById('pill'); p.className = cls; p.textContent = txt; }
+let _tt;
+function toast(msg, err=false) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.className = err ? 'err' : '';
-    t.style.display = 'block';
-    clearTimeout(_toastT);
-    _toastT = setTimeout(() => t.style.display = 'none', 4500);
+    t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block';
+    clearTimeout(_tt); _tt = setTimeout(() => t.style.display='none', 5000);
 }
-
-function throttleErr(msg) {
-    if (Date.now() - lastErrTs > 8000) { lastErrTs = Date.now(); toast(msg, true); }
-}
-
 function dbg(msg) { document.getElementById('badge-dbg').textContent = msg; }
-
 function mediana(arr) {
     if (!arr.length) return 0;
-    const s = [...arr].sort((a,b) => a-b);
+    const s = [...arr].sort((a,b)=>a-b);
     const m = Math.floor(s.length/2);
     return s.length%2 ? s[m] : Math.round((s[m-1]+s[m])/2);
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 </script>
 </body>
 </html>
