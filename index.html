@@ -7,313 +7,164 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         :root {
             --bg:      #0f1a0f;
             --surface: #162116;
             --card:    #1d2e1d;
             --border:  #2a3f2a;
             --green:   #4ade80;
-            --lime:    #a3e635;
             --amber:   #fbbf24;
             --red:     #f87171;
             --text:    #e2f5e2;
             --muted:   #6b8f6b;
-            --mono:    'Space Mono', monospace;
-            --sans:    'Syne', sans-serif;
         }
+        body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; display: flex; flex-direction: column; }
 
-        body {
-            font-family: var(--sans);
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* ── SETUP SCREEN ── */
+        /* ── SETUP ── */
         #setup-screen {
-            position: fixed; inset: 0;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            padding: 24px;
-            z-index: 100;
+            position: fixed; inset: 0; z-index: 200;
+            background: var(--bg); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 18px; padding: 28px;
         }
-        #setup-screen .goat-icon { font-size: 4rem; }
-        #setup-screen h1 { font-size: 2rem; font-weight: 800; text-align: center; }
+        #setup-screen h1 { font-size: 2rem; font-weight: 800; }
         #setup-screen p  { color: var(--muted); font-size: .85rem; text-align: center; max-width: 320px; line-height: 1.6; }
-
-        .setup-field {
-            width: 100%; max-width: 380px;
-            display: flex; flex-direction: column; gap: 6px;
+        .field { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-family: 'Space Mono', monospace; font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+        .field input, .field select {
+            width: 100%; background: var(--card); border: 1.5px solid var(--border);
+            border-radius: 10px; color: var(--text); font-family: 'Space Mono', monospace;
+            font-size: .85rem; padding: 12px 14px; outline: none;
         }
-        .setup-field label {
-            font-family: var(--mono);
-            font-size: .65rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .08em;
-        }
-        .setup-field input, .setup-field select {
-            width: 100%;
-            background: var(--card);
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: .85rem;
-            padding: 12px 14px;
-            outline: none;
-            transition: border-color .2s;
-        }
-        .setup-field input:focus, .setup-field select:focus {
-            border-color: var(--green);
-        }
-        .setup-field select option { background: var(--card); }
-
+        .field input:focus, .field select:focus { border-color: var(--green); }
+        .field select option { background: var(--card); }
         #btn-start {
-            width: 100%; max-width: 380px;
-            background: var(--green);
-            color: #0f1a0f;
-            font-family: var(--sans);
-            font-weight: 800;
-            font-size: 1rem;
-            border: none;
-            border-radius: 12px;
-            padding: 14px;
-            cursor: pointer;
-            transition: opacity .2s, transform .1s;
+            width: 100%; max-width: 380px; background: var(--green); color: #0f1a0f;
+            font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem;
+            border: none; border-radius: 12px; padding: 14px; cursor: pointer;
         }
-        #btn-start:active { transform: scale(.97); opacity: .85; }
-
-        .setup-note {
-            font-family: var(--mono);
-            font-size: .62rem;
-            color: var(--muted);
-            text-align: center;
-            max-width: 340px;
-            line-height: 1.7;
-        }
-        .setup-note a { color: var(--green); text-decoration: none; }
+        .note { font-family: 'Space Mono', monospace; font-size: .6rem; color: var(--muted); text-align: center; max-width: 340px; line-height: 1.7; }
+        .note a { color: var(--green); }
 
         /* ── HEADER ── */
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
-            flex-shrink: 0;
-        }
+        header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
         .logo { display: flex; align-items: center; gap: 10px; }
-        .logo-icon {
-            width: 34px; height: 34px;
-            background: var(--green);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-        }
-        .logo-text { font-size: 1.05rem; font-weight: 800; }
-        .logo-sub  { font-size: .6rem; color: var(--muted); font-family: var(--mono); }
-
-        #status-pill {
-            padding: 5px 11px;
-            border-radius: 999px;
-            font-family: var(--mono);
-            font-size: .6rem;
-            font-weight: 700;
-            letter-spacing: .05em;
-            background: var(--card);
-            border: 1px solid var(--border);
-            color: var(--muted);
-            transition: all .4s;
-            white-space: nowrap;
-        }
-        #status-pill.loading  { color: var(--amber); border-color: var(--amber); }
-        #status-pill.counting { color: var(--green); border-color: var(--green); animation: pulse-pill 2s infinite; }
-        #status-pill.error    { color: var(--red);   border-color: var(--red); }
-        @keyframes pulse-pill {
-            0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,.4); }
-            50%      { box-shadow: 0 0 0 5px rgba(74,222,128,0); }
-        }
-
-        /* ── MAIN ── */
-        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .logo-icon { width: 32px; height: 32px; background: var(--green); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+        .logo-text { font-size: 1rem; font-weight: 800; }
+        .logo-sub  { font-size: .58rem; color: var(--muted); font-family: 'Space Mono', monospace; }
+        #pill { padding: 4px 10px; border-radius: 999px; font-family: 'Space Mono', monospace; font-size: .58rem; font-weight: 700; letter-spacing: .05em; background: var(--card); border: 1px solid var(--border); color: var(--muted); transition: all .3s; white-space: nowrap; }
+        #pill.loading { color: var(--amber); border-color: var(--amber); }
+        #pill.ok      { color: var(--green); border-color: var(--green); animation: pulse 2s infinite; }
+        #pill.error   { color: var(--red);   border-color: var(--red); }
+        @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)} 50%{box-shadow:0 0 0 5px rgba(74,222,128,0)} }
 
         /* ── VIDEO ── */
-        #video-wrap {
-            position: relative;
-            background: #000;
-            flex-shrink: 0;
-        }
-        #cam { display: block; width: 100%; max-height: 55dvh; object-fit: contain; background: #000; }
-        #overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #wrap { position: relative; background: #000; flex-shrink: 0; line-height: 0; }
+        #vid  { display: block; width: 100%; max-height: 52dvh; object-fit: contain; }
+        #cvs  { position: absolute; top: 0; left: 0; pointer-events: none; }
 
-        /* big counter */
-        #big-count {
-            position: absolute;
-            top: 10px; left: 10px;
-            background: rgba(0,0,0,.65);
-            backdrop-filter: blur(8px);
-            border: 1.5px solid var(--green);
-            border-radius: 10px;
-            padding: 6px 14px;
-            display: flex; flex-direction: column; align-items: center;
-            line-height: 1;
-        }
-        #big-count .num {
-            font-size: 2.8rem; font-weight: 800;
-            color: var(--green); font-family: var(--mono);
-            transition: transform .15s;
-        }
-        #big-count .num.bump { transform: scale(1.3); }
-        #big-count .lbl { font-size: .5rem; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-family: var(--mono); }
+        /* badges */
+        #badge-count { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.72); backdrop-filter: blur(6px); border: 1.5px solid var(--green); border-radius: 10px; padding: 5px 13px; display: flex; flex-direction: column; align-items: center; }
+        #badge-count .n { font-size: 2.6rem; font-weight: 800; color: var(--green); font-family: 'Space Mono', monospace; line-height: 1; transition: transform .15s; }
+        #badge-count .n.bump { transform: scale(1.3); }
+        #badge-count .l { font-size: .46rem; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-family: 'Space Mono', monospace; }
+        .badge { background: rgba(0,0,0,.6); backdrop-filter: blur(4px); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-family: 'Space Mono', monospace; font-size: .54rem; color: var(--muted); }
+        #badge-fps { position: absolute; top: 10px; right: 10px; }
+        #badge-dbg { position: absolute; bottom: 8px; left: 8px; max-width: 62%; word-break: break-all; }
+        #badge-mdl { position: absolute; bottom: 8px; right: 8px; }
 
-        #fps-badge {
-            position: absolute; top: 10px; right: 10px;
-            background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
-            border: 1px solid var(--border); border-radius: 6px;
-            padding: 3px 8px;
-            font-family: var(--mono); font-size: .58rem; color: var(--muted);
-        }
-
-        #model-badge {
-            position: absolute; bottom: 8px; right: 10px;
-            background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
-            border: 1px solid var(--border); border-radius: 6px;
-            padding: 3px 10px;
-            font-family: var(--mono); font-size: .58rem; color: var(--muted);
-        }
-
-        /* ── CONTROLS ── */
-        #controls {
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            padding: 10px 14px;
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-        .ctrl-group { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 110px; }
-        .ctrl-label { font-family: var(--mono); font-size: .55rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+        /* ── CONTROLES ── */
+        #controls { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+        .cg { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 110px; }
+        .cl { font-family: 'Space Mono', monospace; font-size: .52rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+        .cv { font-family: 'Space Mono', monospace; font-size: .66rem; color: var(--green); }
         input[type=range] { width: 100%; accent-color: var(--green); height: 4px; }
-        .ctrl-val { font-family: var(--mono); font-size: .68rem; color: var(--green); }
-
-        #btn-save {
-            background: var(--green); color: #0f1a0f;
-            font-family: var(--sans); font-weight: 800; font-size: .82rem;
-            border: none; border-radius: 10px; padding: 10px 16px;
-            cursor: pointer; white-space: nowrap; flex-shrink: 0;
-            transition: opacity .2s, transform .1s;
-        }
-        #btn-save:active { transform: scale(.95); }
+        #btn-save { background: var(--green); color: #0f1a0f; font-family: 'Syne', sans-serif; font-weight: 800; font-size: .8rem; border: none; border-radius: 10px; padding: 10px 15px; cursor: pointer; flex-shrink: 0; white-space: nowrap; }
 
         /* ── LOG ── */
-        #log-section { flex: 1; overflow-y: auto; padding: 10px 14px; }
-        #log-title { font-family: var(--mono); font-size: .58rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+        #log-wrap { flex: 1; overflow-y: auto; padding: 10px 14px; }
+        #log-ttl  { font-family: 'Space Mono', monospace; font-size: .54rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
         #log { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-        #log li {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 8px; padding: 8px 12px;
-            display: flex; align-items: center; justify-content: space-between;
-            animation: slide-in .22s ease;
-        }
-        @keyframes slide-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-        .log-num { font-family: var(--mono); font-weight: 700; color: var(--green); font-size: 1rem; }
-        .log-time { font-family: var(--mono); font-size: .58rem; color: var(--muted); }
-        #log-empty { font-family: var(--mono); font-size: .68rem; color: var(--muted); text-align: center; padding: 18px 0; }
+        #log li { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; animation: si .2s ease; }
+        @keyframes si { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+        .ln { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--green); font-size: 1rem; }
+        .lt { font-family: 'Space Mono', monospace; font-size: .54rem; color: var(--muted); }
+        #log-empty { font-family: 'Space Mono', monospace; font-size: .64rem; color: var(--muted); text-align: center; padding: 18px 0; }
 
-        /* ── ERROR TOAST ── */
-        #toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--red); color: #fff;
-            font-family: var(--mono); font-size: .72rem;
-            padding: 10px 18px; border-radius: 8px;
-            display: none; z-index: 200; text-align: center;
-            max-width: 90vw;
-        }
+        /* ── TOAST ── */
+        #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #1a2e1a; border: 1px solid var(--green); color: var(--green); font-family: 'Space Mono', monospace; font-size: .68rem; padding: 10px 18px; border-radius: 8px; display: none; z-index: 300; text-align: center; max-width: 88vw; }
+        #toast.err { background: #2e1a1a; border-color: var(--red); color: var(--red); }
     </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════
-     SETUP SCREEN
-════════════════════════════════════════════ -->
+<!-- SETUP -->
 <div id="setup-screen">
-    <div class="goat-icon">🐐</div>
+    <div style="font-size:3.5rem">🐐</div>
     <h1>Goat Conut AI</h1>
-    <p>Ingresa tu API key de Roboflow para activar el modelo entrenado específicamente con cabras.</p>
+    <p>Ingresa tu API key de Roboflow para activar la detección de cabras con YOLOv8.</p>
 
-    <div class="setup-field">
+    <div class="field">
         <label>Roboflow API Key</label>
-        <input type="password" id="api-key-input" placeholder="rf_xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+        <input type="password" id="inp-key" placeholder="rf_xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
     </div>
 
-    <div class="setup-field">
-        <label>Modelo de detección</label>
-        <select id="model-select">
-            <option value="brookside-research/goat-looker/1">Goat Looker — Brookside Research (3,970 imgs) ⭐</option>
-            <option value="justin-burger/goats-hqnax/1">Goats — Justin Burger (690 imgs)</option>
-            <option value="great-ouleb/goat-ai/1">Goat AI — Great (145 imgs)</option>
+    <div class="field">
+        <label>Modelo</label>
+        <select id="inp-model">
+            <option value="brookside-research/goat-looker/1">⭐ Goat Looker — 3,970 imágenes</option>
+            <option value="justin-burger/goats-hqnax/1">Goats — 690 imágenes</option>
+            <option value="great-ouleb/goat-ai/1">Goat AI — 145 imágenes</option>
         </select>
     </div>
 
     <button id="btn-start" onclick="startApp()">🚀 INICIAR DETECTOR</button>
 
-    <p class="setup-note">
-        API key gratis en <a href="https://roboflow.com" target="_blank">roboflow.com</a> → Sign up → Settings → API Keys.<br>
-        Tu key se usa solo en este dispositivo y nunca se envía a ningún servidor externo al propio Roboflow.
+    <p class="note">
+        API key gratis en <a href="https://roboflow.com" target="_blank">roboflow.com</a>
+        → Sign up → Settings → API Keys
     </p>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     APP
-════════════════════════════════════════════ -->
+<!-- APP -->
 <header>
     <div class="logo">
         <div class="logo-icon">🐐</div>
         <div>
             <div class="logo-text">Goat Conut AI</div>
-            <div class="logo-sub">Roboflow · YOLO · Cabras</div>
+            <div class="logo-sub">Roboflow · YOLOv8</div>
         </div>
     </div>
-    <div id="status-pill" class="loading">⏳ INICIANDO</div>
+    <div id="pill" class="loading">⏳ INICIANDO</div>
 </header>
 
 <main>
-    <div id="video-wrap">
-        <video id="cam" autoplay playsinline muted></video>
-        <canvas id="overlay"></canvas>
-
-        <div id="big-count">
-            <span class="num" id="counter">0</span>
-            <span class="lbl">cabras</span>
+    <div id="wrap">
+        <video id="vid" autoplay playsinline muted></video>
+        <canvas id="cvs"></canvas>
+        <div id="badge-count">
+            <span class="n" id="counter">0</span>
+            <span class="l">cabras</span>
         </div>
-        <div id="fps-badge" id="fps">-- fps</div>
-        <div id="model-badge">modelo: --</div>
-        <div id="debug-info" style="position:absolute;bottom:8px;left:10px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid #2a3f2a;border-radius:6px;padding:3px 10px;font-family:'Space Mono',monospace;font-size:.55rem;color:#6b8f6b;max-width:70%;">esperando API...</div>
+        <div id="badge-fps" class="badge">-- fps</div>
+        <div id="badge-dbg" class="badge">esperando cámara…</div>
+        <div id="badge-mdl" class="badge">--</div>
     </div>
 
     <div id="controls">
-        <div class="ctrl-group">
-            <span class="ctrl-label">Confianza: <span class="ctrl-val" id="conf-val">0.40</span></span>
-            <input type="range" id="conf-range" min="0.10" max="0.90" step="0.05" value="0.40">
+        <div class="cg">
+            <span class="cl">Confianza: <span class="cv" id="v-conf">0.35</span></span>
+            <input type="range" id="sl-conf" min="0.10" max="0.90" step="0.05" value="0.35">
         </div>
-        <div class="ctrl-group">
-            <span class="ctrl-label">Suavizado: <span class="ctrl-val" id="smooth-val">12</span> frames</span>
-            <input type="range" id="smooth-range" min="1" max="30" step="1" value="12">
+        <div class="cg">
+            <span class="cl">Suavizado: <span class="cv" id="v-smooth">10</span> frames</span>
+            <input type="range" id="sl-smooth" min="1" max="30" step="1" value="10">
         </div>
         <button id="btn-save" onclick="saveCount()">💾 GUARDAR</button>
     </div>
 
-    <div id="log-section">
-        <div id="log-title">📋 Historial de conteos</div>
+    <div id="log-wrap">
+        <div id="log-ttl">📋 Historial de conteos</div>
         <ul id="log"></ul>
         <div id="log-empty">Presiona GUARDAR para registrar un conteo</div>
     </div>
@@ -322,293 +173,310 @@
 <div id="toast"></div>
 
 <script>
-// ── STATE ──
-let apiKey = '';
-let modelEndpoint = 'goat-looker/1';
-let confidenceThreshold = 0.40;
-let smoothingWindow = 12;
+/* ══════════════════════════════════
+   STATE
+══════════════════════════════════ */
+let API_KEY  = '';
+let MODEL_ID = '';
+let CONF     = 0.35;
+let SMOOTH   = 10;
 
-let videoEl, canvasEl, ctx;
+let vid, cvs, ctx;
 let countHistory = [];
-let prevCount = 0;
-let running = false;
+let prevCount    = 0;
+let inferring    = false;
+let lastErrTs    = 0;
+let fpsSmooth    = 0;
+let lastFpsTs    = performance.now();
 
-let lastInferenceTime = 0;
-let inferenceInterval = 300; // ms entre llamadas a la API (ajustable)
-let fpsSmooth = 0;
-let lastFrameTime = performance.now();
-
-// ── SETUP ──
+/* ══════════════════════════════════
+   SETUP
+══════════════════════════════════ */
 function startApp() {
-    apiKey = document.getElementById('api-key-input').value.trim();
-    modelEndpoint = document.getElementById('model-select').value;
-
-    if (!apiKey || !apiKey.startsWith('rf_')) {
-        showToast('❌ API key inválida. Debe empezar con "rf_"');
+    const key = document.getElementById('inp-key').value.trim();
+    if (!key || !key.startsWith('rf_')) {
+        toast('La API key debe empezar con "rf_"', true);
         return;
     }
-
+    API_KEY  = key;
+    MODEL_ID = document.getElementById('inp-model').value;
     document.getElementById('setup-screen').style.display = 'none';
-    document.getElementById('model-badge').textContent = 'modelo: ' + modelEndpoint.split('/')[1];
+    document.getElementById('badge-mdl').textContent = MODEL_ID.split('/')[1];
     initCamera();
 }
+document.getElementById('inp-key')
+    .addEventListener('keydown', e => { if (e.key === 'Enter') startApp(); });
 
-// ── CAMERA ──
+/* ══════════════════════════════════
+   CAMERA
+══════════════════════════════════ */
 async function initCamera() {
-    videoEl = document.getElementById('cam');
-    canvasEl = document.getElementById('overlay');
-    ctx = canvasEl.getContext('2d');
+    vid = document.getElementById('vid');
+    cvs = document.getElementById('cvs');
+    ctx = cvs.getContext('2d');
+    setPill('loading', '⏳ CÁMARA');
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+            video: { facingMode: { ideal: 'environment' },
+                     width:  { ideal: 640 },
+                     height: { ideal: 480 } }
         });
-        videoEl.srcObject = stream;
-        videoEl.onloadedmetadata = () => {
-            // El canvas interno debe coincidir con el video original para la inferencia
-            canvasEl.width  = videoEl.videoWidth;
-            canvasEl.height = videoEl.videoHeight;
+        vid.srcObject = stream;
 
-            // Sincronizar tamaño del canvas desplegado con el video renderizado
-            function syncCanvasSize() {
-                const rect = videoEl.getBoundingClientRect();
-                canvasEl.style.width  = rect.width  + 'px';
-                canvasEl.style.height = rect.height + 'px';
-                canvasEl.style.left   = rect.left - videoEl.parentElement.getBoundingClientRect().left + 'px';
-                canvasEl.style.top    = rect.top  - videoEl.parentElement.getBoundingClientRect().top  + 'px';
-            }
-            syncCanvasSize();
-            window.addEventListener('resize', syncCanvasSize);
+        // Esperar metadata + play (necesario en iOS Safari)
+        await new Promise((res, rej) => {
+            vid.onloadedmetadata = () => vid.play().then(res).catch(res);
+            setTimeout(res, 5000); // timeout de seguridad
+        });
 
-            running = true;
-            setPill('counting', '🐐 DETECTANDO');
-            requestAnimationFrame(loop);
-        };
+        // Esperar a que videoWidth sea real (puede tardar en iOS)
+        let attempts = 0;
+        while ((!vid.videoWidth || !vid.videoHeight) && attempts < 20) {
+            await sleep(150);
+            attempts++;
+        }
+
+        if (!vid.videoWidth) throw new Error('No se obtuvo resolución del video');
+
+        syncCanvas();
+        window.addEventListener('resize', syncCanvas);
+
+        setPill('ok', '🐐 DETECTANDO');
+        dbg(`cámara OK · ${vid.videoWidth}×${vid.videoHeight}`);
+
+        // Iniciar loop de inferencia
+        inferLoop();
+        // Iniciar loop de FPS (rAF)
+        requestAnimationFrame(fpsLoop);
+
     } catch (e) {
         setPill('error', '❌ SIN CÁMARA');
-        showToast('No se pudo acceder a la cámara: ' + e.message);
+        toast('Cámara: ' + e.message, true);
     }
 }
 
-// ── MAIN LOOP (draw + throttled inference) ──
-function loop(timestamp) {
-    if (!running) return;
+function syncCanvas() {
+    // El canvas interno coincide con la resolución del video
+    cvs.width  = vid.videoWidth  || 640;
+    cvs.height = vid.videoHeight || 480;
 
-    // FPS
-    const dt = timestamp - lastFrameTime;
-    lastFrameTime = timestamp;
-    fpsSmooth = fpsSmooth * 0.88 + (1000 / dt) * 0.12;
-    document.getElementById('fps-badge').textContent = Math.round(fpsSmooth) + ' fps';
-
-    // Disparar inferencia con throttle
-    if (timestamp - lastInferenceTime > inferenceInterval) {
-        lastInferenceTime = timestamp;
-        runInference(); // async, no bloquea el loop
-    }
-
-    requestAnimationFrame(loop);
+    // El canvas visual se posiciona y dimensiona exactamente sobre el video
+    const vr = vid.getBoundingClientRect();
+    const wr = vid.parentElement.getBoundingClientRect();
+    cvs.style.width  = vr.width  + 'px';
+    cvs.style.height = vr.height + 'px';
+    cvs.style.left   = (vr.left - wr.left) + 'px';
+    cvs.style.top    = (vr.top  - wr.top)  + 'px';
 }
 
-// ── INFERENCE vía Roboflow Hosted API ──
+/* ══════════════════════════════════
+   INFERENCE LOOP
+   - No usa rAF (para no saturar móvil)
+   - Espera a que termine cada llamada
+     antes de lanzar la siguiente
+══════════════════════════════════ */
+async function inferLoop() {
+    while (true) {
+        await runInference();
+        await sleep(350); // pausa entre inferencias
+    }
+}
+
 async function runInference() {
-    if (!videoEl.videoWidth) return;
+    if (inferring) return;
+    if (!vid.videoWidth || vid.readyState < 2) return;
 
-    // Capturar frame del video en un canvas temporal
-    const tmpCanvas = document.createElement('canvas');
-    tmpCanvas.width  = videoEl.videoWidth;
-    tmpCanvas.height = videoEl.videoHeight;
-    tmpCanvas.getContext('2d').drawImage(videoEl, 0, 0);
-
-    // Convertir a base64 (sin el prefijo "data:image/jpeg;base64,")
-    const base64 = tmpCanvas.toDataURL('image/jpeg', 0.75).split(',')[1];
-
+    inferring = true;
     try {
-        // Roboflow serverless v2 — acepta modelos públicos de Universe con cualquier API key válida
-        // El model ID para modelos públicos es: workspace/project/version
-        const url = `https://serverless.roboflow.com/${modelEndpoint}?api_key=${apiKey}&confidence=${Math.round(confidenceThreshold * 100)}&overlap=30`;
+        // Captura frame actual como JPEG base64
+        const tmp = document.createElement('canvas');
+        tmp.width  = vid.videoWidth;
+        tmp.height = vid.videoHeight;
+        tmp.getContext('2d').drawImage(vid, 0, 0);
+        const b64 = tmp.toDataURL('image/jpeg', 0.82).split(',')[1];
+
+        const url = `https://serverless.roboflow.com/${MODEL_ID}`
+                  + `?api_key=${API_KEY}`
+                  + `&confidence=${Math.round(CONF * 100)}`
+                  + `&overlap=30`;
 
         const resp = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: base64
+            body: b64
         });
 
         if (!resp.ok) {
-            let errMsg = `HTTP ${resp.status}`;
-            try {
-                const errJson = await resp.json();
-                errMsg = errJson.message || errJson.error || errMsg;
-            } catch (_) {}
-
-            // Mostrar toast solo una vez cada 10 segundos para no spamear
-            if (!runInference._lastErrTime || Date.now() - runInference._lastErrTime > 10000) {
-                runInference._lastErrTime = Date.now();
-                if (resp.status === 401) showToast('❌ API key inválida o sin permisos');
-                else if (resp.status === 403) showToast('❌ Acceso denegado — verifica tu API key');
-                else if (resp.status === 404) showToast('❌ Modelo no encontrado — intenta otro modelo');
-                else showToast('Error API: ' + errMsg);
-            }
-            setPill('error', '❌ ERROR ' + resp.status);
+            const body = await resp.json().catch(() => ({}));
+            const msg  = body.message || body.error || `HTTP ${resp.status}`;
+            throttleErr(`❌ API ${resp.status}: ${msg}`);
+            setPill('error', '❌ ' + resp.status);
+            inferring = false;
             return;
         }
 
-        const data = await resp.json();
+        const data  = await resp.json();
+        const preds = data.predictions || [];
 
-        // DEBUG: mostrar respuesta cruda en consola y en panel
-        console.log('Roboflow response:', data);
-        const dbg = document.getElementById('debug-info');
-        if (dbg) {
-            const preds = data.predictions || [];
-            dbg.textContent = `API OK · ${preds.length} detecciones · img: ${data.image?.width}×${data.image?.height}`;
+        dbg(`API OK · ${preds.length} det · ${data.image?.width}×${data.image?.height}`);
+        if (document.getElementById('pill').classList.contains('error')) {
+            setPill('ok', '🐐 DETECTANDO');
         }
 
-        // Si llegamos aquí, la API funciona — restaurar pill si estaba en error
-        const pill = document.getElementById('status-pill');
-        if (pill.classList.contains('error')) setPill('counting', '🐐 DETECTANDO');
-
-        renderDetections(data.predictions || []);
+        render(preds);
 
     } catch (e) {
-        // Red o CORS — silencioso para no spamear
-        console.warn('Inference error:', e.message);
+        throttleErr('Red: ' + e.message);
     }
+    inferring = false;
 }
 
-// ── RENDER DETECTIONS ──
-function renderDetections(predictions) {
-    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+/* ══════════════════════════════════
+   RENDER
+══════════════════════════════════ */
+function render(preds) {
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
 
-    // Roboflow devuelve coordenadas relativas al tamaño de imagen enviada (videoWidth x videoHeight)
-    // El canvas interno tiene el mismo tamaño → scaleX/Y = 1, sin transformación necesaria
-    // El canvas se escala visualmente via CSS para que coincida con el video en pantalla
-
-    let count = 0;
-
-    for (const p of predictions) {
-        count++;
-
-        // x,y en Roboflow = CENTRO del box
+    for (const p of preds) {
+        // Roboflow: x,y = centro del box, en píxeles de la imagen enviada
         const x = p.x - p.width  / 2;
         const y = p.y - p.height / 2;
         const w = p.width;
         const h = p.height;
-
-        const conf = Math.round(p.confidence * 100);
+        const pct = Math.round(p.confidence * 100);
 
         // Bounding box
         ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth   = 2.5;
+        ctx.lineWidth   = 3;
         ctx.beginPath();
         ctx.roundRect(x, y, w, h, 6);
         ctx.stroke();
 
-        // Esquinas decorativas
-        drawCorners(x, y, w, h, '#4ade80', 14);
+        // Esquinas
+        drawCorners(x, y, w, h, '#4ade80', 15);
 
         // Etiqueta
-        const label = `🐐 CABRA ${conf}%`;
-        ctx.font = 'bold 13px monospace';
-        const tw = ctx.measureText(label).width + 14;
-
-        ctx.fillStyle = 'rgba(74,222,128,0.85)';
+        const lbl = `🐐 ${pct}%`;
+        ctx.font = 'bold 14px monospace';
+        const tw  = ctx.measureText(lbl).width + 16;
+        ctx.fillStyle = 'rgba(74,222,128,0.88)';
         ctx.beginPath();
-        ctx.roundRect(x, y - 24, tw, 22, 4);
+        ctx.roundRect(x, y - 26, tw, 24, 4);
         ctx.fill();
-
         ctx.fillStyle = '#0f1a0f';
-        ctx.fillText(label, x + 7, y - 7);
+        ctx.fillText(lbl, x + 8, y - 8);
 
-        // Barra de confianza al fondo del box
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        // Barra de confianza
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(x, y + h - 5, w, 5);
         ctx.fillStyle = '#4ade80';
         ctx.fillRect(x, y + h - 5, w * p.confidence, 5);
     }
 
-    // Estabilización con mediana
-    countHistory.push(count);
-    if (countHistory.length > smoothingWindow) countHistory.shift();
+    // Actualizar conteo estabilizado
+    countHistory.push(preds.length);
+    if (countHistory.length > SMOOTH) countHistory.shift();
     const stable = mediana(countHistory);
 
-    const numEl = document.getElementById('counter');
-    numEl.textContent = stable;
+    const el = document.getElementById('counter');
     if (stable !== prevCount) {
-        numEl.classList.add('bump');
-        setTimeout(() => numEl.classList.remove('bump'), 200);
+        el.textContent = stable;
+        el.classList.add('bump');
+        setTimeout(() => el.classList.remove('bump'), 200);
         prevCount = stable;
     }
 }
 
 function drawCorners(x, y, w, h, color, cs) {
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
-    const pairs = [
-        [x, y, x+cs, y], [x, y, x, y+cs],
-        [x+w, y, x+w-cs, y], [x+w, y, x+w, y+cs],
-        [x, y+h, x+cs, y+h], [x, y+h, x, y+h-cs],
-        [x+w, y+h, x+w-cs, y+h], [x+w, y+h, x+w, y+h-cs],
-    ];
-    for (const [x1,y1,x2,y2] of pairs) {
+    ctx.lineWidth   = 2.5;
+    [[x,y,x+cs,y],[x,y,x,y+cs],
+     [x+w,y,x+w-cs,y],[x+w,y,x+w,y+cs],
+     [x,y+h,x+cs,y+h],[x,y+h,x,y+h-cs],
+     [x+w,y+h,x+w-cs,y+h],[x+w,y+h,x+w,y+h-cs]
+    ].forEach(([x1,y1,x2,y2]) => {
         ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-    }
+    });
 }
+
+/* ── FPS loop (rAF independiente) ── */
+function fpsLoop(ts) {
+    const dt = ts - lastFpsTs;
+    lastFpsTs = ts;
+    if (dt > 0) fpsSmooth = fpsSmooth * 0.85 + (1000/dt) * 0.15;
+    document.getElementById('badge-fps').textContent = Math.round(fpsSmooth) + ' fps';
+    requestAnimationFrame(fpsLoop);
+}
+
+/* ══════════════════════════════════
+   CONTROLES
+══════════════════════════════════ */
+document.getElementById('sl-conf').addEventListener('input', function() {
+    CONF = parseFloat(this.value);
+    document.getElementById('v-conf').textContent = CONF.toFixed(2);
+});
+document.getElementById('sl-smooth').addEventListener('input', function() {
+    SMOOTH = parseInt(this.value);
+    document.getElementById('v-smooth').textContent = SMOOTH;
+    if (countHistory.length > SMOOTH) countHistory = countHistory.slice(-SMOOTH);
+});
+
+/* ══════════════════════════════════
+   GUARDAR
+══════════════════════════════════ */
+function saveCount() {
+    const num  = document.getElementById('counter').textContent;
+    const t    = new Date();
+    const time = t.toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const date = t.toLocaleDateString('es-MX');
+
+    document.getElementById('log-empty')?.remove();
+    const li = document.createElement('li');
+    li.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px">
+            <span class="ln">${num}</span>
+            <span style="font-size:.75rem">cabras · ${MODEL_ID.split('/')[1]}</span>
+        </div>
+        <span class="lt">${date} · ${time}</span>`;
+    document.getElementById('log').prepend(li);
+    toast('✅ Guardado: ' + num + ' cabras');
+    const btn = document.getElementById('btn-save');
+    btn.textContent = '✅ GUARDADO';
+    setTimeout(() => btn.textContent = '💾 GUARDAR', 1500);
+}
+
+/* ══════════════════════════════════
+   HELPERS
+══════════════════════════════════ */
+function setPill(cls, txt) {
+    const p = document.getElementById('pill');
+    p.className = cls; p.textContent = txt;
+}
+
+let _toastT;
+function toast(msg, err = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = err ? 'err' : '';
+    t.style.display = 'block';
+    clearTimeout(_toastT);
+    _toastT = setTimeout(() => t.style.display = 'none', 4500);
+}
+
+function throttleErr(msg) {
+    if (Date.now() - lastErrTs > 8000) { lastErrTs = Date.now(); toast(msg, true); }
+}
+
+function dbg(msg) { document.getElementById('badge-dbg').textContent = msg; }
 
 function mediana(arr) {
     if (!arr.length) return 0;
     const s = [...arr].sort((a,b) => a-b);
-    const m = Math.floor(s.length / 2);
-    return s.length % 2 ? s[m] : Math.round((s[m-1]+s[m])/2);
+    const m = Math.floor(s.length/2);
+    return s.length%2 ? s[m] : Math.round((s[m-1]+s[m])/2);
 }
 
-// ── CONTROLES ──
-document.getElementById('conf-range').addEventListener('input', function() {
-    confidenceThreshold = parseFloat(this.value);
-    document.getElementById('conf-val').textContent = confidenceThreshold.toFixed(2);
-});
-document.getElementById('smooth-range').addEventListener('input', function() {
-    smoothingWindow = parseInt(this.value);
-    document.getElementById('smooth-val').textContent = smoothingWindow;
-    if (countHistory.length > smoothingWindow) countHistory = countHistory.slice(-smoothingWindow);
-});
-
-// ── GUARDAR ──
-function saveCount() {
-    const num = document.getElementById('counter').textContent;
-    const t   = new Date();
-    const time = t.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-    const date = t.toLocaleDateString('es-MX');
-
-    document.getElementById('log-empty')?.remove();
-
-    const li = document.createElement('li');
-    li.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;">
-            <span class="log-num">${num}</span>
-            <span style="font-size:.75rem;color:var(--text)">cabras — ${modelEndpoint.split('/')[1]}</span>
-        </div>
-        <span class="log-time">${date} · ${time}</span>`;
-    document.getElementById('log').prepend(li);
-
-    const btn = document.getElementById('btn-save');
-    btn.textContent = '✅ GUARDADO';
-    setTimeout(() => btn.textContent = '💾 GUARDAR', 1200);
-}
-
-// ── HELPERS ──
-function setPill(cls, txt) {
-    const p = document.getElementById('status-pill');
-    p.className = cls; p.textContent = txt;
-}
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.style.display = 'block';
-    setTimeout(() => t.style.display = 'none', 4000);
-}
-
-// Enter en el input de API key
-document.getElementById('api-key-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') startApp();
-});
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
